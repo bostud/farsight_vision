@@ -15,17 +15,17 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     earth_radius: int = 6378137 # meters
-    dron_camera_view_angle: int = 80
+    dron_camera_view_angle: int = 80  # dji mavic example
     dron_altitude: int = 55  # meters
 
-    video_read_frame: int = 3
+    video_read_frame: int = 5
     video_resize_width: int = 960
 
-    @property
-    def meters_per_pixel(self) -> float:
-        pixel_koef = math.tan(math.radians(self.dron_camera_view_angle / 2))
+    # GSD
+    def meters_per_pixel(self, video_width: int) -> float:
+        radians_koef = math.tan(math.radians(self.dron_camera_view_angle / 2))
         return (
-            (2 * self.dron_altitude * pixel_koef) / self.video_resize_width
+            (2 * self.dron_altitude * radians_koef) / video_width
         )
 
 
@@ -72,6 +72,7 @@ class DronePathBuilder:
 
         # optimization
         self.target_width = self.settings.video_resize_width
+        self.video_width = self.settings.video_resize_width
 
         # coordinates
         self.earth_radius = self.settings.earth_radius
@@ -113,7 +114,7 @@ class DronePathBuilder:
             raise RuntimeError(f"Could not open video file {video_path}")
 
         # video params
-        video_width = int(video_capture.get(cv2.CAP_PROP_FRAME_WIDTH))
+        self.video_width = int(video_capture.get(cv2.CAP_PROP_FRAME_WIDTH))
         video_height = int(video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
         video_total_frames = int(video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
 
@@ -121,7 +122,7 @@ class DronePathBuilder:
         if not ret:
             raise RuntimeError(f"Could not read video file {video_path}")
 
-        scale_factor = self.target_width / video_width
+        scale_factor = self.target_width / self.video_width
         dimension = (self.target_width, int(video_height * scale_factor))
         old_gray_color = self._get_cvt_color(old_frame, dimension)
         first_frame = self._track_features(old_gray_color)
@@ -161,20 +162,22 @@ class DronePathBuilder:
         video_capture.release()
 
     def get_dfp_in_meters(self) -> Generator[tuple[float, float], None, None]:
-        mpp = self.settings.meters_per_pixel
+        mpp = self.settings.meters_per_pixel(self.video_width)
+        scale_factor = self.video_width / self.target_width
+        frame_scale = self.settings.video_read_frame
 
         if not self._drone_flight_plan_origin:
             self.calculate_flight_plan()
 
         for avg_dx, avg_dy in self._drone_flight_plan_origin:
-            dx_m = avg_dx * mpp
-            dy_m = -avg_dy * mpp
+            dx_m = avg_dx * mpp * scale_factor * frame_scale
+            dy_m = -avg_dy * mpp * scale_factor * frame_scale
             yield dx_m, dy_m
 
     def get_dfp2coordinates(self) -> list[tuple[float, float]]:
         curr_lat = self.current_lat
         curr_lon = self.current_lon
-        open_angle = 180
+        open_angle = self.settings.dron_camera_view_angle
         gps_coordinates = [(curr_lat, curr_lon)]
 
         distance_x_init, distance_y_init = 0, 0

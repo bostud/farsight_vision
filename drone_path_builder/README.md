@@ -27,3 +27,12 @@ Script will create result dir and 2 files:
 
 ## Optimization places:
 1. Drone path "noise" - improve path visibility on map, deleting places where drone stays in place, watching down or other non-movements actions.
+
+
+## Test run:
+1. Drone map png: ![drone_map.png](result-drone-path/drone_map.png)
+   > need to "play" with route noise and distance scale
+2. Drone map html: [drone_map.html](result-drone-path/drone_map.html)
+   > start lt:48.257872372270846
+   > 
+   > start ln:25.90294701141752
