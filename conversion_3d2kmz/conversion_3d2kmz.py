@@ -70,7 +70,9 @@ class Wgs84CoordParser:
     def calculate_lon_lat(self, force_read: bool = False) -> tuple[float, float]:
         if force_read or not (self._x_coords and self._y_coords):
             self._x_coords, self._y_coords = self._read_coords()
-        return self.transformer.transform(self._x_coords, self._y_coords)
+        lons, lats = self.transformer.transform(self._x_coords, self._y_coords)
+        # return only first pair of coordinates
+        return lons[0], lats[0]
 
     def parse_line(self, line: str) -> tuple[float, float]:
         line_split = line.strip().split(self.line_splitter)

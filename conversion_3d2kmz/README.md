@@ -17,3 +17,10 @@
 
 ## Dir structure
 File: `model_kmz_text.kmz` - converted file based on test-task description
+
+
+## Test run
+1. Coordinates: [lat : 48.257872372270846] [lon : 25.90294701141752]
+2. File to convert: <source-archive>/texturing/textured_model_geo.obj (![source.png](results/source.png))
+3. File result: ![result.png](results/result.png)
+4. Service to preview online: https://imagetostl.com/view-obj-online
